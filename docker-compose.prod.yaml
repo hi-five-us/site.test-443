@@ -1,0 +1,47 @@
+version: '3'
+services:
+
+  rancher-server:
+    image: rancher/server
+    container_name: rancher-server
+    restart:  unless-stopped
+    networks:
+      - backend
+    volumes:
+      - "/mnt/rancher/mysql:/var/lib/mysql"
+
+  proxy:
+    image: infra-master-server-proxy:1.0.0
+    container_name: proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - backend
+    volumes:
+      - "certs:/etc/nginx/certs"
+      - "certbot:/etc/nginx/html/certbot"
+      - "./conf/etc/nginx/conf.d:/etc/nginx/conf.d:ro"
+
+  proxy-cert:
+    image: infra-proxy-cert:1.0.0
+    container_name: proxy-cert
+    restart: unless-stopped
+    environment:
+      DOCKER_HOST: unix:///tmp/docker.sock
+    volumes:
+      - "certs:/etc/nginx/certs"
+      - "certbot:/etc/nginx/html/certbot"
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+      - "letsencrypt-etc:/etc/letsencrypt"
+      - "letsencrypt-varlib:/var/lib/letsencrypt"
+
+networks:
+  backend:
+
+volumes:
+  certbot:
+  certs:
+  letsencrypt-etc:
+  letsencrypt-varlib:
